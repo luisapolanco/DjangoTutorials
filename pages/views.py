@@ -63,6 +63,7 @@ class ProductShowView(View):
         viewData["title"] = product["name"] + " - Online Store" 
         viewData["subtitle"] =  product["name"] + " - Product information" 
         viewData["product"] = product  
+        viewData["price"]= int(product["price"])
 
         return render(request, self.template_name, viewData)
     
@@ -88,10 +89,24 @@ class ProductCreateView(View):
 
     def post(self, request): 
         form = ProductForm(request.POST) 
-        if form.is_valid():            
-            return redirect(form) 
+        if form.is_valid():    
+            cleanPrice = form.cleaned_data['price']
+            if cleanPrice is not None and cleanPrice <= 0:
+                raise forms.ValidationError("El número debe ser mayor que cero.")
+            else:            
+                id = len(Product.products) +1
+                product = {
+                    "name" : form.cleaned_data['name'],
+                    "price" : cleanPrice,
+                    "id": id
+                }
+                Product.products.append(product)      
+                return HttpResponseRedirect('/products/succesful/created')     
         else: 
             viewData = {} 
             viewData["title"] = "Create product" 
             viewData["form"] = form 
             return render(request, self.template_name, viewData)
+        
+class CreatedView(TemplateView):
+    template_name = 'products/createdMessage.html'
